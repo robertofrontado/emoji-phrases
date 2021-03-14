@@ -10,12 +10,12 @@ import java.lang.IllegalArgumentException
 
 class EmojiPhrasesRepository: Repository {
 
-    override suspend fun add(userId: String, emojiValue: String, phraseValue: String): Unit = dbQuery {
+    override suspend fun add(userId: String, emojiValue: String, phraseValue: String) = dbQuery {
         EmojiPhrases.insert {
             it[this.userId] = userId
             it[emoji] = emojiValue
             it[phrase] = phraseValue
-        }
+        }.resultedValues?.map(::toEmojiPhrase)?.singleOrNull()
     }
 
     override suspend fun phrase(id: Int): EmojiPhrase? = dbQuery {
@@ -64,6 +64,12 @@ class EmojiPhrasesRepository: Repository {
         Users.select { Users.email eq email }
             .mapNotNull(::toUser)
             .singleOrNull()
+
+    override suspend fun userById(userId: String): User? = dbQuery {
+        Users.select { Users.id eq userId }
+            .map(::toUser)
+            .singleOrNull()
+    }
 
     override suspend fun createUser(user: User): Unit = dbQuery {
         Users.insert {

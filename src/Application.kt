@@ -1,6 +1,7 @@
 package com.frontado
 
-import com.frontado.api.phrase
+import com.frontado.api.login
+import com.frontado.api.phrasesApi
 import com.frontado.model.EPSession
 import com.frontado.model.User
 import com.frontado.repository.DatabaseFactory
@@ -9,6 +10,7 @@ import com.frontado.webapp.*
 import freemarker.cache.ClassTemplateLoader
 import io.ktor.application.*
 import io.ktor.auth.*
+import io.ktor.auth.jwt.*
 import io.ktor.features.*
 import io.ktor.freemarker.*
 import io.ktor.gson.*
@@ -68,6 +70,21 @@ fun Application.module(testing: Boolean = false) {
     DatabaseFactory.init()
 
     val db = EmojiPhrasesRepository()
+    val jwtService = JwtService()
+
+    install(Authentication) {
+        jwt("jwt") {
+            verifier(jwtService.verifier)
+            realm = "emojiphrases app"
+            validate {
+                val payload = it.payload
+                val claim = payload.getClaim("id")
+                val claimString = claim.asString()
+                return@validate db.userById(claimString)
+            }
+        }
+
+    }
 
     routing {
         static("/static") {
@@ -81,7 +98,8 @@ fun Application.module(testing: Boolean = false) {
         signup(db, hashFunction)
 
         // API
-        phrase(db)
+        login(db, jwtService)
+        phrasesApi(db)
     }
 }
 
@@ -99,3 +117,5 @@ fun ApplicationCall.securityCode(date: Long, user: User, hashFunction: (String) 
 fun ApplicationCall.verifyCode(date: Long, user: User, code: String, hashFunction: (String) -> String) =
     securityCode(date, user, hashFunction) == code
             && (System.currentTimeMillis() - date).let { it > 0 && it < TimeUnit.MILLISECONDS.convert(2, TimeUnit.HOURS) }
+
+val ApplicationCall.apiUser get() = authentication.principal<User>()
