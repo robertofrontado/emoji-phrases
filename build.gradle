@@ -1,15 +1,27 @@
 buildscript {
     repositories {
         jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
     }
     
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.1'
     }
 }
 
+
 apply plugin: 'kotlin'
 apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+mainClassName = 'com.frontado.ApplicationKt'
+
+shadowJar {
+    archiveBaseName.set('emoji-phrases')
+    archiveClassifier.set('')
+    archiveVersion.set('')
+}
 
 group 'com.frontado'
 version '0.0.1-SNAPSHOT'
